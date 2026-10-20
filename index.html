@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Juliana Romero · Directora de Modernización & SIG</title>
+<meta name="description" content="Portfolio de Juliana Romero - Directora de Modernización en Municipalidad de Balcarce. Transformación digital, GIS y datos geoespaciales.">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --bg-2: #0f1524;
+    --cyan: #22d3ee;
+    --green: #10b981;
+    --purple: #a855f7;
+    --yellow: #facc15;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+  }
+  * { font-family: 'Space Grotesk', sans-serif; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); overflow-x: hidden; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  #bg-canvas { position: fixed; inset: 0; z-index: 0; opacity: 0.5; }
+
+  .glow { position: absolute; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; }
+  .glow-1 { top: -10%; left: -10%; width: 500px; height: 500px; background: rgba(34,211,238,0.12); }
+  .glow-2 { bottom: -10%; right: -10%; width: 600px; height: 600px; background: rgba(168,85,247,0.10); }
+  .glow-3 { top: 40%; left: 50%; width: 400px; height: 400px; background: rgba(16,185,129,0.08); }
+
+  .reveal { opacity: 0; transform: translateY(40px); transition: opacity 0.9s ease, transform 0.9s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  .gradient-text {
+    background: linear-gradient(90deg, #22d3ee, #10b981, #a855f7, #facc15, #22d3ee);
+    background-size: 300% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shine 8s linear infinite;
+  }
+  @keyframes shine { to { background-position: 300% center; } }
+
+  .cursor::after { content: '|'; color: var(--cyan); animation: blink 1s infinite; margin-left: 2px; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .timeline-line {
+    position: absolute; left: 50%; top: 0; bottom: 0; width: 2px;
+    background: linear-gradient(to bottom, transparent, var(--cyan), var(--purple), transparent);
+    transform: translateX(-50%);
+  }
+  .timeline-dot {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--cyan); box-shadow: 0 0 20px var(--cyan);
+    border: 3px solid var(--bg);
+  }
+
+  .project-card {
+    transition: transform 0.4s cubic-bezier(.2,.9,.3,1), box-shadow 0.4s;
+    transform-style: preserve-3d;
+  }
+  .project-card:hover {
+    transform: translateY(-8px) rotateX(3deg) rotateY(-3deg);
+    box-shadow: 0 20px 60px -15px rgba(34,211,238,0.35);
+  }
+
+  .skill-bar { height: 6px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; }
+  .skill-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan), var(--green), var(--purple));
+    border-radius: 999px; width: 0;
+    transition: width 1.5s cubic-bezier(.2,.9,.3,1);
+  }
+
+  .nav-link { position: relative; transition: color 0.3s; }
+  .nav-link::after {
+    content: ''; position: absolute; left: 0; bottom: -4px;
+    width: 0; height: 2px; background: var(--cyan); transition: width 0.3s;
+  }
+  .nav-link:hover::after, .nav-link.active::after { width: 100%; }
+  .nav-link:hover { color: var(--cyan); }
+
+  .scroll-indicator { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); animation: bounce 2s infinite; }
+  @keyframes bounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 10px); } }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 999px;
+    background: rgba(34,211,238,0.1);
+    border: 1px solid rgba(34,211,238,0.3);
+    font-size: 0.75rem; color: var(--cyan);
+  }
+
+  .glass {
+    background: rgba(15,21,36,0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  #scroll-progress {
+    position: fixed; top: 0; left: 0; height: 3px;
+    background: linear-gradient(90deg, var(--cyan), var(--green), var(--purple));
+    z-index: 100; width: 0%; transition: width 0.1s;
+  }
+
+  /* Foto hero con borde animado */
+  .photo-frame {
+    position: relative;
+    padding: 4px;
+    background: linear-gradient(135deg, var(--cyan), var(--green), var(--purple), var(--yellow));
+    background-size: 300% 300%;
+    animation: borderShift 6s ease infinite;
+    border-radius: 50%;
+  }
+  @keyframes borderShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .photo-frame img {
+    border-radius: 50%;
+    display: block;
+    border: 4px solid var(--bg);
+  }
+
+  /* Countdown */
+  .countdown-box {
+    background: linear-gradient(135deg, rgba(34,211,238,0.1), rgba(168,85,247,0.1));
+    border: 1px solid rgba(168,85,247,0.3);
+  }
+  .countdown-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 2rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Logo hover */
+  .logo-tile {
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .logo-tile:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 40px -10px rgba(34,211,238,0.4);
+  }
+
+  @media (max-width: 768px) {
+    .timeline-line { left: 20px; }
+    .timeline-dot { left: 20px; }
+    .countdown-num { font-size: 1.5rem; }
+  }
+
+  /* Marquee logos */
+  .marquee {
+  display: flex;
+  gap: 3rem;
+  animation: scroll 30s linear infinite;
+  width: max-content;
+}
+@keyframes scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.logo-tile img {
+  filter: grayscale(100%) brightness(1.2);
+  transition: filter 0.3s, transform 0.3s;
+}
+.logo-tile:hover img {
+  filter: grayscale(0%) brightness(1);
+}
+.logo-tile:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 40px -10px rgba(34,211,238,0.4);
+}
+
+</style>
+</head>
+<body class="relative">
+
+<div id="scroll-progress"></div>
+<canvas id="bg-canvas"></canvas>
+<div class="glow glow-1"></div>
+<div class="glow glow-2"></div>
+<div class="glow glow-3"></div>
+
+<!-- NAV -->
+<nav class="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5">
+  <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+    <a href="#hero" class="flex items-center gap-2 font-bold text-lg">
+      <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 via-emerald-500 to-purple-500 flex items-center justify-center text-black text-xs">JR</span>
+      <span class="hidden sm:inline">Juliana Romero</span>
+    </a>
+    <div class="flex items-center gap-6 text-sm">
+      <a href="#sobre" class="nav-link hidden md:inline">Sobre mí</a>
+      <a href="#experiencia" class="nav-link hidden md:inline">Trayectoria</a>
+      <a href="#proyectos" class="nav-link hidden md:inline">Proyectos</a>
+      <a href="#skills" class="nav-link hidden md:inline">Skills</a>
+      <a href="#contacto" class="px-4 py-2 rounded-full bg-gradient-to-r from-cyan-400 via-emerald-500 to-purple-500 text-black font-semibold hover:scale-105 transition">Contacto</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero" class="relative min-h-screen flex items-center justify-center px-6 pt-20">
+  <div class="relative z-10 max-w-6xl mx-auto">
+    <div class="grid md:grid-cols-[auto_1fr] gap-10 items-center">
+      <!-- Foto -->
+      <div class="reveal mx-auto md:mx-0">
+        <div class="photo-frame w-56 h-56 md:w-72 md:h-72">
+          <img src="foto-juliana.jpeg" alt="Juliana Romero" class="w-full h-full object-cover" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 200 200%22><rect fill=%22%230f1524%22 width=%22200%22 height=%22200%22/><text x=%2250%25%22 y=%2255%25%22 text-anchor=%22middle%22 font-family=%22sans-serif%22 font-size=%2260%22 fill=%22%2322d3ee%22>JR</text></svg>'">
+        </div>
+      </div>
+
+      <!-- Texto -->
+      <div class="reveal text-center md:text-left">
+        <div class="badge mb-6 mx-auto md:mx-0 w-fit">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          Disponible para nuevos desafíos
+        </div>
+        <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight mb-4">
+          Hola, soy <span class="gradient-text">Juliana Romero</span>
+        </h1>
+        <p class="text-xl md:text-2xl text-slate-300 mb-2">
+          Directora de Modernización · Especialista en <span class="text-cyan-400 font-semibold">GIS</span> y <span class="text-purple-400 font-semibold">Transformación Digital</span>
+        </p>
+        <p class="text-slate-400 max-w-2xl mx-auto md:mx-0 mb-8">
+          +11 años liderando la innovación en el sector público. Transformo territorios con datos, procesos digitales y soluciones orientadas al ciudadano.
+        </p>
+        <div class="flex flex-wrap gap-4 justify-center md:justify-start mb-10">
+          <a href="#proyectos" class="px-6 py-3 rounded-full bg-gradient-to-r from-cyan-400 via-emerald-500 to-purple-500 text-black font-semibold hover:scale-105 transition">Ver proyectos</a>
+          <a href="#contacto" class="px-6 py-3 rounded-full border border-white/20 hover:border-cyan-400 hover:text-cyan-400 transition">Hablemos</a>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-3xl">
+          <div class="glass rounded-2xl p-4 text-center">
+            <div class="text-2xl md:text-3xl font-bold gradient-text">+11</div>
+            <div class="text-xs text-slate-400 mt-1">años de experiencia</div>
+          </div>
+          <div class="glass rounded-2xl p-4 text-center">
+            <div class="text-2xl md:text-3xl font-bold gradient-text">+10</div>
+            <div class="text-xs text-slate-400 mt-1">proyectos estratégicos</div>
+          </div>
+          <div class="glass rounded-2xl p-4 text-center">
+            <div class="text-2xl md:text-3xl font-bold gradient-text">IDE</div>
+            <div class="text-xs text-slate-400 mt-1">Balcarce creada</div>
+          </div>
+          <div class="glass rounded-2xl p-4 text-center">
+            <div class="text-2xl md:text-3xl font-bold gradient-text">C2</div>
+            <div class="text-xs text-slate-400 mt-1">inglés avanzado</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll-indicator text-slate-500 text-xs flex flex-col items-center gap-2">
+    <span>scroll</span>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+  </div>
+</section>
+
+<!-- LOGOS INSTITUCIONALES -->
+<section class="relative py-12 px-6 overflow-hidden">
+  <div class="max-w-6xl mx-auto">
+    <p class="text-center text-xs mono text-slate-500 mb-6">// ORGANISMOS Y CONVENIOS CON LOS QUE COLABORO</p>
+    <div class="overflow-hidden">
+      <div class="marquee items-center">
+        <!-- Logo 1: Dirección de Modernización -->
+        <div class="logo-tile glass rounded-xl px-6 py-3 flex items-center gap-3 shrink-0">
+          <img src="logo-modernizacion.png" alt="Dirección de Modernización" class="h-16 w-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+          <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-cyan-400 to-emerald-500 flex items-center justify-center text-black font-bold text-xs" style="display:none">DM</div>
+          <span class="font-semibold text-sm hidden sm:inline">Dirección de Modernización</span>
+        </div>
+
+        <!-- Logo 2: IDE Balcarce -->
+        <div class="logo-tile glass rounded-xl px-6 py-3 flex items-center gap-3 shrink-0">
+          <img src="logo-ide.png" alt="IDE Balcarce" class="h-16 w-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+          <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-cyan-400 flex items-center justify-center text-white font-bold text-xs" style="display:none">IDE</div>
+          <span class="font-semibold text-sm hidden sm:inline">IDE Balcarce</span>
+        </div>
+
+        <!-- Logo 3: IDERA -->
+        <div class="logo-tile glass rounded-xl px-6 py-3 flex items-center gap-3 shrink-0">
+          <img src="logo-idra.png" alt="IDERA" class="h-16 w-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+          <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-emerald-500 to-cyan-400 flex items-center justify-center text-white font-bold text-xs" style="display:none">IDERA</div>
+          <span class="font-semibold text-sm hidden sm:inline">IDERA</span>
+        </div>
+
+        <!-- Logo 4: ARBA -->
+        <div class="logo-tile glass rounded-xl px-6 py-3 flex items-center gap-3 shrink-0">
+          <img src="logo-arba.png" alt="ARBA" class="h-16 w-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+          <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs" style="display:none">ARBA</div>
+          <span class="font-semibold text-sm hidden sm:inline">ARBA</span>
+        </div>
+
+        <!-- Logo 5: INTA -->
+        <div class="logo-tile glass rounded-xl px-6 py-3 flex items-center gap-3 shrink-0">
+          <img src="logo-inta.png" alt="INTA" class="h-16 w-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+          <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-400 flex items-center justify-center text-white font-bold text-xs" style="display:none">INTA</div>
+          <span class="font-semibold text-sm hidden sm:inline">INTA</span>
+        </div>
+
+        <!-- Logo 6: Universidades -->
+        <div class="logo-tile glass rounded-xl px-6 py-3 flex items-center gap-3 shrink-0">
+          <img src="logo-universidades.png" alt="UNICEN · UTN · UNMDP" class="h-16 w-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+          <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-yellow-500 to-orange-400 flex items-center justify-center text-white font-bold text-xs" style="display:none">UNI</div>
+          <span class="font-semibold text-sm hidden sm:inline">UNICEN · UTN · UNMDP</span>
+        </div>
+
+        <!-- REPETIR PARA EFECTO INFINITO -->
+        <div class="logo-tile glass rounded-xl px-6 py-3 flex items-center gap-3 shrink-0">
+          <img src="logo-modernizacion.png" alt="Dirección de Modernización" class="h-16 w-auto object-contain" onerror="this.style.display='none'">
+          <span class="font-semibold text-sm hidden sm:inline">Dirección de Modernización</span>
+        </div>
+        <div class="logo-tile glass rounded-xl px-6 py-3 flex items-center gap-3 shrink-0">
+          <img src="logo-ide" alt="IDE Balcarce" class="h-16 w-auto object-contain" onerror="this.style.display='none'">
+          <span class="font-semibold text-sm hidden sm:inline">IDE Balcarce</span>
+        </div>
+        <div class="logo-tile glass rounded-xl px-6 py-3 flex items-center gap-3 shrink-0">
+          <img src="logo-idera.png" alt="IDERA" class="h-16 w-auto object-contain" onerror="this.style.display='none'">
+          <span class="font-semibold text-sm hidden sm:inline">IDERA</span>
+        </div>
+        <div class="logo-tile glass rounded-xl px-6 py-3 flex items-center gap-3 shrink-0">
+          <img src="logo-arba.png" alt="ARBA" class="h-16 w-auto object-contain" onerror="this.style.display='none'">
+          <span class="font-semibold text-sm hidden sm:inline">ARBA</span>
+        </div>
+        <div class="logo-tile glass rounded-xl px-6 py-3 flex items-center gap-3 shrink-0">
+          <img src="logo-inta.png" alt="INTA" class="h-16 w-auto object-contain" onerror="this.style.display='none'">
+          <span class="font-semibold text-sm hidden sm:inline">INTA</span>
+        </div>
+        <div class="logo-tile glass rounded-xl px-6 py-3 flex items-center gap-3 shrink-0">
+          <img src="logo-universidades.png" alt="UNICEN · UTN · UNMDP" class="h-16 w-auto object-contain" onerror="this.style.display='none'">
+          <span class="font-semibold text-sm hidden sm:inline">UNICEN · UTN · UNMDP</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SOBRE -->
+<section id="sobre" class="relative py-24 px-6">
+  <div class="max-w-5xl mx-auto">
+    <div class="reveal">
+      <span class="mono text-cyan-400 text-sm">// 01 · Perfil profesional</span>
+      <h2 class="text-4xl md:text-5xl font-bold mt-2 mb-8">Innovación con <span class="gradient-text">propósito territorial</span></h2>
+    </div>
+    <div class="grid md:grid-cols-2 gap-8 reveal">
+      <div class="glass rounded-2xl p-8">
+       <div class="text-4xl mb-4" style="opacity: 1 !important;">🌍</div>
+	<h3 class="text-xl font-bold mb-3">Visión geoespacial</h3>
+        <p class="text-slate-400 leading-relaxed">
+          Licenciada en Geografía y Técnica en SIG, combino análisis territorial con tecnología de punta para transformar la gestión pública en soluciones tangibles para la ciudadanía.
+        </p>
+      </div>
+      <div class="glass rounded-2xl p-8">
+        <div class="text-4xl mb-4">⚙️</div>
+        <h3 class="text-xl font-bold mb-3">Modernización estatal</h3>
+        <p class="text-slate-400 leading-relaxed">
+          Lidero la transformación digital del municipio de Balcarce: GDE, firma digital, catastro actualizado con ARBA y la creación de la Infraestructura de Datos Espaciales local.
+        </p>
+      </div>
+      <div class="glass rounded-2xl p-8">
+        <div class="text-4xl mb-4">🛰️</div>
+        <h3 class="text-xl font-bold mb-3">Datos & IA</h3>
+        <p class="text-slate-400 leading-relaxed">
+          Diplomada en Ciencia de Datos e IA (UTN), aplico machine learning, teledetección y análisis con R/Python para resolver problemas complejos del mundo real.
+        </p>
+      </div>
+      <div class="glass rounded-2xl p-8">
+        <div class="text-4xl mb-4">👥</div>
+        <h3 class="text-xl font-bold mb-3">Formación & liderazgo</h3>
+        <p class="text-slate-400 leading-relaxed">
+          Capacito equipos municipales en herramientas 4.0 y coordino convenios estratégicos con IDERA, ARBA, INTA y universidades, articulando sector público, academia y tecnología.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EXPERIENCIA / TIMELINE -->
+<section id="experiencia" class="relative py-24 px-6">
+  <div class="max-w-5xl mx-auto">
+    <div class="reveal">
+      <span class="mono text-cyan-400 text-sm">// 02 · Trayectoria</span>
+      <h2 class="text-4xl md:text-5xl font-bold mt-2 mb-16">Mi <span class="gradient-text">camino profesional</span></h2>
+    </div>
+
+    <div class="relative">
+      <div class="timeline-line hidden md:block"></div>
+
+      <!-- Item 1 -->
+      <div class="reveal relative mb-16 md:grid md:grid-cols-2 md:gap-12">
+        <div class="timeline-dot hidden md:block" style="top: 20px;"></div>
+        <div class="md:text-right md:pr-12">
+          <span class="mono text-cyan-400 text-sm">Dic 2015 — Actualidad</span>
+          <h3 class="text-2xl font-bold mt-2">Directora de Modernización</h3>
+          <p class="text-emerald-400 font-medium">Municipalidad de Balcarce</p>
+        </div>
+        <div class="glass rounded-2xl p-6 mt-4 md:mt-0">
+          <ul class="text-slate-300 space-y-2 text-sm">
+            <li>→ Lideré la transformación digital con <b class="text-white">GDE</b> y <b class="text-white">Firma Digital</b> en municipio y HCD.</li>
+            <li>→ Creé la <b class="text-white">IDE Balcarce</b> y el Geoportal municipal.</li>
+            <li>→ Gestioné catastro territorial con <b class="text-white">ARBA</b> y relevamiento de edificaciones no declaradas.</li>
+            <li>→ Dirijo la capacitación de empleados municipales en herramientas 4.0.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Item 2 -->
+      <div class="reveal relative mb-16 md:grid md:grid-cols-2 md:gap-12">
+        <div class="timeline-dot hidden md:block" style="top: 20px;"></div>
+        <div class="glass rounded-2xl p-6 md:order-1 md:ml-auto">
+          <ul class="text-slate-300 space-y-2 text-sm">
+            <li>→ Mapas de monitoreo de plagas (bichos bolita, babosas).</li>
+            <li>→ Análisis de ciclos de cultivo con <b class="text-white">NDVI</b> y <b class="text-white">MSI</b>.</li>
+            <li>→ Integración de imágenes satelitales y drones.</li>
+          </ul>
+        </div>
+        <div class="md:text-left md:pl-12 md:order-2 mt-4 md:mt-0">
+          <span class="mono text-cyan-400 text-sm">2020 — 2021</span>
+          <h3 class="text-2xl font-bold mt-2">Analista GIS</h3>
+          <p class="text-emerald-400 font-medium">GEOS · Agroservicios del Sudoeste</p>
+        </div>
+      </div>
+
+      <!-- Item 3 -->
+      <div class="reveal relative mb-16 md:grid md:grid-cols-2 md:gap-12">
+        <div class="timeline-dot hidden md:block" style="top: 20px;"></div>
+        <div class="md:text-right md:pr-12">
+          <span class="mono text-cyan-400 text-sm">2019</span>
+          <h3 class="text-2xl font-bold mt-2">Supervisora & Formadora SIG</h3>
+          <p class="text-emerald-400 font-medium">DPE · Municipalidad de Lobería</p>
+        </div>
+        <div class="glass rounded-2xl p-6 mt-4 md:mt-0">
+          <ul class="text-slate-300 space-y-2 text-sm">
+            <li>→ Actualización de domicilios proyecto <b class="text-white">ADRA</b>.</li>
+            <li>→ Formación a agentes y concejales en SIG.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROYECTOS -->
+<section id="proyectos" class="relative py-24 px-6">
+  <div class="max-w-6xl mx-auto">
+    <div class="reveal">
+      <span class="mono text-cyan-400 text-sm">// 03 · Proyectos destacados</span>
+      <h2 class="text-4xl md:text-5xl font-bold mt-2 mb-12">Impacto <span class="gradient-text">medible</span></h2>
+    </div>
+
+    <!-- Otros proyectos -->
+		<div class="reveal project-card glass rounded-2xl p-6 cursor-pointer group">
+	<div class="flex items-center justify-between mb-4">
+		<div class="w-12 h-16 rounded-xl bg-gradient-to-br from-cyan-400/20 to-cyan-400/5 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+		<img src="mibalcarce.png" alt="IDE" class="h-8 w-auto object-contain" onerror="this.style.display='none'; this.parentElement.innerHTML='🌐'">
+		</div>
+		<span class="mono text-xs text-slate-500">2026</span>
+	</div>
+	<h3 class="text-xl font-bold mb-2">Mi Balcarce.gob.ar</h3>
+	<p class="text-slate-400 text-sm mb-4">Página de trámites digitales del municipio.</p>
+	<div class="flex flex-wrap gap-2 mb-4">
+		<span class="badge">Digitalización</span>
+	</div>
+	<a href="http://mibalcarce.gob.ar" target="_blank" class="inline-flex items-center gap-2 text-sm text-cyan-400 hover:text-cyan-300 transition font-semibold">
+		Visitar MiBalcarce
+		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+	</a>
+	</div>
+	<div class="reveal project-card glass rounded-2xl p-6 cursor-pointer group">
+	<div class="flex items-center justify-between mb-4">
+		<div class="w-12 h-16 rounded-xl bg-gradient-to-br from-cyan-400/20 to-cyan-400/5 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+		<img src="logo-ide.png" alt="IDE" class="h-8 w-auto object-contain" onerror="this.style.display='none'; this.parentElement.innerHTML='🌐'">
+		</div>
+		<span class="mono text-xs text-slate-500">2018 — hoy</span>
+	</div>
+	<h3 class="text-xl font-bold mb-2">IDE Balcarce & Geoportal</h3>
+	<p class="text-slate-400 text-sm mb-4">Infraestructura de Datos Espaciales municipal para planificación territorial abierta.</p>
+	<div class="flex flex-wrap gap-2 mb-4">
+		<span class="badge">GeoServer</span>
+		<span class="badge">Leaflet</span>
+		<span class="badge">QGIS</span>
+	</div>
+	<a href="http://ide.balcarce-app.gob.ar/" target="_blank" class="inline-flex items-center gap-2 text-sm text-cyan-400 hover:text-cyan-300 transition font-semibold">
+		Visitar IDE Balcarce
+		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+	</a>
+	</div>
+
+      <div class="reveal project-card glass rounded-2xl p-6 cursor-pointer">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-12 h-16 rounded-xl bg-gradient-to-br from-emerald-400/20 to-emerald-400/5 flex items-center justify-center text-2xl">📄</div>
+          <span class="mono text-xs text-slate-500">2015 — hoy</span>
+        </div>
+        <h3 class="text-xl font-bold mb-2">GDE & Firma Digital</h3>
+        <p class="text-slate-400 text-sm mb-4">Cero papel en municipio y Honorable Consejo Deliberante. Expediente 100% digital.</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="badge">GDE</span>
+          <span class="badge">Transformación</span>
+        </div>
+      </div>
+
+      <div class="reveal project-card glass rounded-2xl p-6 cursor-pointer">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400/20 to-emerald-400/5 flex items-center justify-center text-2xl">🏠</div>
+          <span class="mono text-xs text-slate-500">2017</span>
+        </div>
+        <h3 class="text-xl font-bold mb-2">Convenio Catastral ARBA</h3>
+        <p class="text-slate-400 text-sm mb-4">Relevamiento de edificaciones no declaradas y actualización del catastro territorial.</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="badge">ARBA</span>
+          <span class="badge">Catastro</span>
+        </div>
+      </div>
+
+      <div class="reveal project-card glass rounded-2xl p-6 cursor-pointer">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400/20 to-cyan-400/5 flex items-center justify-center text-2xl">🦠</div>
+          <span class="mono text-xs text-slate-500">2020</span>
+        </div>
+        <h3 class="text-xl font-bold mb-2">Sistema VETe · Covid-19</h3>
+        <p class="text-slate-400 text-sm mb-4">Vigilancia Epidemiológica Territorial junto a INTA-FCA. Monitoreo de contactos estrechos.</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="badge">INTA</span>
+          <span class="badge">Aeroterra</span>
+          <span class="badge">GIS</span>
+        </div>
+      </div>
+
+      <div class="reveal project-card glass rounded-2xl p-6 cursor-pointer">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400/20 to-cyan-400/5 flex items-center justify-center text-2xl">🎓</div>
+          <span class="mono text-xs text-slate-500">2021</span>
+        </div>
+        <h3 class="text-xl font-bold mb-2">Capacitación 4.0</h3>
+        <p class="text-slate-400 text-sm mb-4">Coordinación del proyecto "Economía del Conocimiento para Municipios" (CESSI/MUMUKI).</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="badge">CESSI</span>
+          <span class="badge">MUMUKI</span>
+        </div>
+      </div>
+
+      <div class="reveal project-card glass rounded-2xl p-6 cursor-pointer">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400/20 to-emerald-400/5 flex items-center justify-center text-2xl">🛰️</div>
+          <span class="mono text-xs text-slate-500">2020 — 2021</span>
+        </div>
+        <h3 class="text-xl font-bold mb-2">Monitoreo satelital agrícola</h3>
+        <p class="text-slate-400 text-sm mb-4">Índices NDVI/MSI para seguimiento de cultivos y detección de plagas con drones.</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="badge">NDVI</span>
+          <span class="badge">Drones</span>
+          <span class="badge">Teledetección</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SKILLS -->
+<section id="skills" class="relative py-24 px-6">
+  <div class="max-w-5xl mx-auto">
+    <div class="reveal">
+      <span class="mono text-cyan-400 text-sm">// 04 · Stack técnico</span>
+      <h2 class="text-4xl md:text-5xl font-bold mt-2 mb-12">Herramientas que <span class="gradient-text">domino</span></h2>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-8">
+      <div class="reveal glass rounded-2xl p-8">
+        <h3 class="text-xl font-bold mb-6 flex items-center gap-2">🗺️ GIS & Geoespacial</h3>
+        <div class="space-y-5">
+          <div><div class="flex justify-between text-sm mb-2"><span>QGIS / ArcGIS</span><span class="mono text-cyan-400">95%</span></div><div class="skill-bar"><div class="skill-fill" data-width="95%"></div></div></div>
+          <div><div class="flex justify-between text-sm mb-2"><span>GeoServer / GeoNetwork</span><span class="mono text-cyan-400">90%</span></div><div class="skill-bar"><div class="skill-fill" data-width="90%"></div></div></div>
+          <div><div class="flex justify-between text-sm mb-2"><span>Leaflet / Web Mapping</span><span class="mono text-cyan-400">85%</span></div><div class="skill-bar"><div class="skill-fill" data-width="85%"></div></div></div>
+          <div><div class="flex justify-between text-sm mb-2"><span>Teledetección / Drones</span><span class="mono text-cyan-400">88%</span></div><div class="skill-bar"><div class="skill-fill" data-width="88%"></div></div></div>
+        </div>
+      </div>
+
+      <div class="reveal glass rounded-2xl p-8">
+        <h3 class="text-xl font-bold mb-6 flex items-center gap-2">💻 Datos & Desarrollo</h3>
+        <div class="space-y-5">
+          <div><div class="flex justify-between text-sm mb-2"><span>R / RStudio</span><span class="mono text-cyan-400">85%</span></div><div class="skill-bar"><div class="skill-fill" data-width="50%"></div></div></div>
+          <div><div class="flex justify-between text-sm mb-2"><span>SQL / Bases de datos</span><span class="mono text-cyan-400">80%</span></div><div class="skill-bar"><div class="skill-fill" data-width="80%"></div></div></div>
+          <div><div class="flex justify-between text-sm mb-2"><span>HTML5 / CSS3 / JS</span><span class="mono text-cyan-400">75%</span></div><div class="skill-bar"><div class="skill-fill" data-width="75%"></div></div></div>
+          <div><div class="flex justify-between text-sm mb-2"><span>Power Query / Excel</span><span class="mono text-cyan-400">90%</span></div><div class="skill-bar"><div class="skill-fill" data-width="90%"></div></div></div>
+        </div>
+      </div>
+
+      <div class="reveal glass rounded-2xl p-8 md:col-span-2">
+        <h3 class="text-xl font-bold mb-6 flex items-center gap-2">🚀 Gestión & Formación</h3>
+        <div class="flex flex-wrap gap-3">
+          <span class="badge">Gestión de proyectos</span>
+          <span class="badge">Transformación digital</span>
+          <span class="badge">Liderazgo de equipos</span>
+          <span class="badge">Capacitación 4.0</span>
+          <span class="badge">Convenios interinstitucionales</span>
+          <span class="badge">Economía del conocimiento</span>
+          <span class="badge">Planificación territorial</span>
+          <span class="badge">Ciencia de datos</span>
+          <span class="badge">IA aplicada</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EDUCACIÓN -->
+<section class="relative py-24 px-6">
+  <div class="max-w-5xl mx-auto">
+    <div class="reveal">
+      <span class="mono text-cyan-400 text-sm">// 05 · Formación</span>
+      <h2 class="text-4xl md:text-5xl font-bold mt-2 mb-12">Aprendizaje <span class="gradient-text">continuo</span></h2>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="reveal glass rounded-2xl p-6 border-l-4 border-purple-400">
+        <div class="mono text-xs text-purple-400">2026</div>
+        <h3 class="font-bold mt-1">Diplomatura en Ciencia de Datos e IA</h3>
+        <p class="text-slate-400 text-sm">UTN FRBA</p>
+      </div>
+      <div class="reveal glass rounded-2xl p-6 border-l-4 border-cyan-400">
+        <div class="mono text-xs text-cyan-400">2026</div>
+        <h3 class="font-bold mt-1">Mapeo agrícola y ambiental con drones</h3>
+        <p class="text-slate-400 text-sm">FCA UNMDP</p>
+      </div>
+      <div class="reveal glass rounded-2xl p-6 border-l-4 border-emerald-400">
+        <div class="mono text-xs text-emerald-400">2023</div>
+        <h3 class="font-bold mt-1">Licenciatura en Geografía</h3>
+        <p class="text-slate-400 text-sm">UNICEN</p>
+      </div>
+      <div class="reveal glass rounded-2xl p-6 border-l-4 border-yellow-400">
+        <div class="mono text-xs text-yellow-400">2015</div>
+        <h3 class="font-bold mt-1">Técnica en Sistemas de Información Geográfica</h3>
+        <p class="text-slate-400 text-sm">UNICEN</p>
+      </div>
+    </div>
+
+    <div class="reveal mt-8 glass rounded-2xl p-6">
+      <h3 class="font-bold mb-4 flex items-center gap-2"> Cursos destacados</h3>
+      <div class="grid md:grid-cols-2 gap-3 text-sm">
+        <div class="flex items-start gap-2"><span class="text-cyan-400">▸</span><span>Detección de basurales con GIS e IA · Fundación Bunge y Born (2023)</span></div>
+        <div class="flex items-start gap-2"><span class="text-cyan-400"></span><span>R aplicado al análisis espacial · CIGA UNAM (2021)</span></div>
+        <div class="flex items-start gap-2"><span class="text-cyan-400">▸</span><span>QGIS y GeoServer · INAP (2021)</span></div>
+        <div class="flex items-start gap-2"><span class="text-cyan-400">▸</span><span>Infraestructuras de Datos Espaciales · UPV (2017)</span></div>
+        <div class="flex items-start gap-2"><span class="text-cyan-400"></span><span>Intermediate Power Query · Datacamp (2024)</span></div>
+        <div class="flex items-start gap-2"><span class="text-cyan-400">▸</span><span>Introducción a bases de datos · Cambalache (2024)</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- IDIOMAS -->
+<section class="relative py-16 px-6">
+  <div class="max-w-5xl mx-auto">
+    <div class="reveal">
+      <span class="mono text-cyan-400 text-sm">// 06 · Idiomas</span>
+      <h2 class="text-3xl md:text-4xl font-bold mt-2 mb-8">Comunicación <span class="gradient-text">global</span></h2>
+    </div>
+    <div class="grid md:grid-cols-3 gap-4 reveal">
+      <div class="glass rounded-2xl p-6 text-center">
+        <div class="text-3xl mb-2">🇦🇷</div>
+        <div class="font-bold">Español</div>
+        <div class="text-sm text-slate-400">Nativo</div>
+      </div>
+      <div class="glass rounded-2xl p-6 text-center border border-cyan-400/30">
+        <div class="text-3xl mb-2">🇬🇧</div>
+        <div class="font-bold">Inglés</div>
+        <div class="text-sm text-cyan-400 font-semibold">C2 · Avanzado</div>
+      </div>
+      <div class="glass rounded-2xl p-6 text-center">
+        <div class="text-3xl mb-2">🇨🇳</div>
+        <div class="font-bold">Chino</div>
+        <div class="text-sm text-slate-400">Básico</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACTO -->
+<section id="contacto" class="relative py-24 px-6">
+  <div class="max-w-4xl mx-auto text-center">
+    <div class="reveal">
+      <span class="mono text-cyan-400 text-sm">// 07 · Conectemos</span>
+      <h2 class="text-4xl md:text-6xl font-bold mt-2 mb-6">¿Hablamos de tu <span class="gradient-text">próximo proyecto</span>?</h2>
+      <p class="text-slate-400 text-lg mb-10 max-w-2xl mx-auto">
+        Abierta a colaboraciones en modernización del Estado, GIS, datos geoespaciales y proyectos de impacto territorial.
+      </p>
+
+      <div class="flex flex-wrap gap-4 justify-center mb-12">
+        <a href="mailto:romerojuliana46@gmail.com" class="glass rounded-2xl px-6 py-4 flex items-center gap-3 hover:border-cyan-400 transition">
+          <span class="text-2xl">✉️</span>
+          <div class="text-left">
+            <div class="text-xs text-slate-400">Email</div>
+            <div class="font-semibold">Contactame</div>
+          </div>
+        </a>
+        <a href="https://linkedin.com/in/juliana-romero-133384140/" target="_blank" class="glass rounded-2xl px-6 py-4 flex items-center gap-3 hover:border-cyan-400 transition">
+          <span class="text-2xl">💼</span>
+          <div class="text-left">
+            <div class="text-xs text-slate-400">LinkedIn</div>
+            <div class="font-semibold">Juliana Romero</div>
+          </div>
+        </a>
+        <a href="#" class="glass rounded-2xl px-6 py-4 flex items-center gap-3 hover:border-cyan-400 transition">
+          <span class="text-2xl">📍</span>
+          <div class="text-left">
+            <div class="text-xs text-slate-400">Ubicación</div>
+            <div class="font-semibold">Balcarce, BA</div>
+          </div>
+        </a>
+        <a href="CV_Juliana_Romero.pdf" download="CV_Juliana_Romero" class="glass rounded-2xl px-6 py-4 flex items-center gap-3 hover:border-cyan-400 transition no-print">
+		<span class="text-2xl">📄</span>
+		<div class="text-left">
+		<div class="text-xs text-slate-400">CV</div>
+		<div class="font-semibold">Descargar PDF</div>
+			</div>
+		</a>
+      </div>
+
+      <div class="mono text-xs text-slate-500">
+        © 2026 · Diseñado y desarrollado con ❤️ por Juliana Romero
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // ===== Canvas de red geoespacial =====
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let nodes = [];
+  const NODE_COUNT = window.innerWidth < 768 ? 40 : 80;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function initNodes() {
+    nodes = [];
+    for (let i = 0; i < NODE_COUNT; i++) {
+      nodes.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
+        r: Math.random() * 2 + 1
+      });
+    }
+  }
+  initNodes();
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    nodes.forEach(n => {
+      n.x += n.vx;
+      n.y += n.vy;
+      if (n.x < 0 || n.x > canvas.width) n.vx *= -1;
+      if (n.y < 0 || n.y > canvas.height) n.vy *= -1;
+
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(34,211,238,0.8)';
+      ctx.fill();
+    });
+
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x;
+        const dy = nodes[i].y - nodes[j].y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 140) {
+          ctx.beginPath();
+          ctx.moveTo(nodes[i].x, nodes[i].y);
+          ctx.lineTo(nodes[j].x, nodes[j].y);
+          const alpha = (1 - dist/140) * 0.25;
+          ctx.strokeStyle = `rgba(34,211,238,${alpha})`;
+          ctx.lineWidth = 0.6;
+          ctx.stroke();
+        }
+      }
+    }
+
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  // ===== Intersection Observer =====
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        entry.target.querySelectorAll('.skill-fill').forEach(bar => {
+          bar.style.width = bar.dataset.width;
+        });
+      }
+    });
+  }, { threshold: 0.15 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // ===== Scroll progress =====
+  const progressBar = document.getElementById('scroll-progress');
+  window.addEventListener('scroll', () => {
+    const scrolled = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+    progressBar.style.width = scrolled + '%';
+  });
+
+  // ===== Nav active =====
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-link');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(sec => {
+      const top = sec.offsetTop - 100;
+      if (window.scrollY >= top) current = sec.id;
+    });
+    navLinks.forEach(link => {
+      link.classList.toggle('active', link.getAttribute('href') === '#' + current);
+    });
+  });
+
+  // ===== Parallax glows =====
+  window.addEventListener('mousemove', (e) => {
+    const x = (e.clientX / window.innerWidth - 0.5) * 30;
+    const y = (e.clientY / window.innerHeight - 0.5) * 30;
+    document.querySelector('.glow-1').style.transform = `translate(${x}px, ${y}px)`;
+    document.querySelector('.glow-2').style.transform = `translate(${-x}px, ${-y}px)`;
+  });
+
+  // ===== Countdown a fines de octubre 2026 =====
+  const launchDate = new Date('2026-10-31T00:00:00').getTime();
+
+  function updateCountdown() {
+    const now = new Date().getTime();
+    const diff = launchDate - now;
+
+    if (diff <= 0) {
+      document.getElementById('countdown').innerHTML = '<div class="col-span-4 text-emerald-400 font-bold text-lg">🚀 ¡Ya está disponible!</div>';
+      return;
+    }
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+    document.getElementById('cd-days').textContent = String(days).padStart(2, '0');
+    document.getElementById('cd-hours').textContent = String(hours).padStart(2, '0');
+    document.getElementById('cd-mins').textContent = String(mins).padStart(2, '0');
+    document.getElementById('cd-secs').textContent = String(secs).padStart(2, '0');
+  }
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+</script>
+
+</body>
+</html>
